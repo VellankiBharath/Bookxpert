@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Chatbot - AI-Powered Recipe Suggestions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-bottom-left-radius: 5px;
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid #667eea;
+        }
+
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .recipe-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .confidence-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .recipe-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .meta-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .ingredients-list {
+            margin: 15px 0;
+        }
+
+        .ingredients-list h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .ingredient-tag {
+            display: inline-block;
+            background: #e7f0ff;
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 12px;
+        }
+
+        .ingredient-tag.matched {
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .instructions {
+            margin-top: 15px;
+        }
+
+        .instructions h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .instruction-step {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .instruction-step:before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 8px;
+            background: #667eea;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .ingredient-input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ingredient-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .ingredient-input:focus {
+            border-color: #667eea;
+        }
+
+        .add-btn {
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .add-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .ingredients-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            min-height: 40px;
+        }
+
+        .ingredient-chip {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .remove-chip {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .send-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .api-status {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Recipe Chatbot</h1>
+            <p>AI-Powered Recipe Suggestions Based on Your Ingredients</p>
+            <div class="api-status">
+                <span class="status-indicator"></span>
+                Connected to Local LLM API
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <h3>Welcome to Recipe Chatbot!</h3>
+                <p>Enter your ingredients below to get personalized recipe suggestions</p>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="ingredient-input-area">
+                <input 
+                    type="text" 
+                    id="ingredientInput" 
+                    class="ingredient-input" 
+                    placeholder="Enter an ingredient (e.g., eggs, onions, rice)..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="add-btn" onclick="addIngredient()">Add</button>
+            </div>
+            
+            <div class="ingredients-display" id="ingredientsDisplay"></div>
+            
+            <button class="send-btn" id="sendBtn" onclick="getRecipe()" disabled>
+                Get Recipe Suggestion 🔍
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let ingredients = [];
+        let conversationHistory = [];
+
+        function addIngredient() {
+            const input = document.getElementById('ingredientInput');
+            const ingredient = input.value.trim();
+            
+            if (ingredient && !ingredients.includes(ingredient.toLowerCase())) {
+                ingredients.push(ingredient.toLowerCase());
+                updateIngredientsDisplay();
+                input.value = '';
+                updateSendButton();
+            }
+        }
+
+        function removeIngredient(ingredient) {
+            ingredients = ingredients.filter(i => i !== ingredient);
+            updateIngredientsDisplay();
+            updateSendButton();
+        }
+
+        function updateIngredientsDisplay() {
+            const display = document.getElementById('ingredientsDisplay');
+            display.innerHTML = ingredients.map(ing => `
+                <div class="ingredient-chip">
+                    <span>${ing}</span>
+                    <span class="remove-chip" onclick="removeIngredient('${ing}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        function updateSendButton() {
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = ingredients.length === 0;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addIngredient();
+            }
+        }
+
+        function addMessage(type, content, recipe = null, confidence = null, matched = []) {
+            const chatContainer = document.getElementById('chatContainer');
+            const emptyState = chatContainer.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            if (type === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <strong>My Ingredients:</strong><br>
+                        ${ingredients.map(i => `<span style="background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 10px; margin: 2px; display: inline-block;">${i}</span>`).join('')}
+                    </div>
+                `;
+            } else {
+                let messageHTML = `<div class="message-content">${content}`;
+                
+                if (recipe) {
+                    messageHTML += `
+                        <div class="recipe-card">
+                            <div class="recipe-header">
+                                <div class="recipe-title">${recipe.name}</div>
+                                <div class="confidence-badge">${confidence}% Match</div>
+                            </div>
+                            
+                            <div class="recipe-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">⏱️ Prep Time</span>
+                                    ${recipe.prep_time}
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">🔥 Cook Time</span>
+                                    ${recipe.cook_time}
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">👥 Servings</span>
+                                    ${recipe.servings} people
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">📊 Difficulty</span>
+                                    ${recipe.difficulty}
+                                </div>
+                            </div>
+
+                            <div class="ingredients-list">
+                                <h4>🛒 Ingredients:</h4>
+                                ${recipe.ingredients.map(ing => {
+                                    const isMatched = matched.some(m => ing.toLowerCase().includes(m));
+                                    return `<span class="ingredient-tag ${isMatched ? 'matched' : ''}">${ing}</span>`;
+                                }).join('')}
+                            </div>
+
+                            <div class="instructions">
+                                <h4>👨‍🍳 Instructions:</h4>
+                                ${recipe.instructions.map((step, idx) => 
+                                    `<div class="instruction-step" data-step="${idx + 1}">${step}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                messageHTML += '</div>';
+                messageDiv.innerHTML = messageHTML;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot';
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="loading">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                    Searching for the perfect recipe...
+                </div>
+            `;
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) loading.remove();
+        }
+
+        async function getRecipe() {
+            if (ingredients.length === 0) return;
+
+            // Add user message
+            addMessage('user', `Looking for recipes with: ${ingredients.join(', ')}`);
+            
+            // Show loading
+            addLoadingMessage();
+            
+            // Disable send button
+            document.getElementById('sendBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ingredients: ingredients,
+                        conversation_history: conversationHistory
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get recipe');
+                }
+
+                const data = await response.json();
+                
+                removeLoadingMessage();
+                
+                // Add bot response
+                addMessage(
+                    'bot', 
+                    data.message, 
+                    data.recipe, 
+                    data.confidence_score,
+                    data.matched_ingredients
+                );
+                
+                // Update conversation history
+                conversationHistory.push({
+                    ingredients: ingredients,
+                    response: data.message
+                });
+
+            } catch (error) {
+                removeLoadingMessage();
+                addMessage('bot', `⚠️ Sorry, I couldn't connect to the recipe API. Make sure the FastAPI server is running at ${API_URL}. Error: ${error.message}`);
+            } finally {
+                // Clear ingredients and re-enable button
+                ingredients = [];
+                updateIngredientsDisplay();
+                updateSendButton();
+            }
+        }
+
+        // Initialize
+        updateSendButton();
+    </script>
+</body>
+</html>
