@@ -432,19 +432,6 @@ def validate_ingredient(ingredient: str) -> bool:
 from fastapi.security import HTTPBearer
 security = HTTPBearer()
 ________________________________________
-📈 Next Steps
-1.	Expand Recipe Database: Add 100+ recipes
-2.	Improve Model: Fine-tune on larger dataset
-3.	Add Features: 
-o	Dietary restrictions (vegan, gluten-free)
-o	Cuisine preferences
-o	Cooking time filters
-o	Nutritional information
-4.	Deploy to Cloud: Use Docker + Kubernetes
-5.	Mobile App: Build React Native app
-________________________________________
-📝 License
-MIT License - Feel free to use and modify!
 👥 Support
 For issues or questions, please create an issue in the repository.
 ________________________________________
